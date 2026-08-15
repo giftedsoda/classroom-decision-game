@@ -413,8 +413,20 @@ function renderClass(){
 function renderBonds(){
   ui.bondList.innerHTML=PAIRS.map(pair=>{const a=game.teams[pair.members[0]],b=game.teams[pair.members[1]],value=game.bonds[pair.id];let stateText=value>=3?"共同结局":value>=2?(game.pairAssistUsed[pair.id]?"支援已使用":"支援可用"):value===0?"需要沟通":"建立中";return `<article class="bond-card"><div class="bond-card-head"><div><strong>${escapeHtml(a.name)} × ${escapeHtml(b.name)}</strong><em>${pair.name} · ${escapeHtml(pair.theme)}</em></div><span class="bond-value">${value}/3</span></div><div class="bond-progress"><div class="bond-dots" aria-hidden="true">${[1,2,3].map(n=>`<i class="bond-dot ${value>=n?"filled":""}"></i>`).join("")}</div><span class="bond-state">${stateText}</span></div></article>`;}).join("");
 }
+function nextActionText(){
+  if(game.phase==="setup"){
+    const remaining=6-game.story.profilesSeen.length;
+    return remaining>0?`继续查看人物档案，还剩${remaining}位学生未阅读。`:"六份档案已读完，点击开始第一周。";
+  }
+  if(game.phase==="echo")return game.round>=6?"查看第六周班级回声，然后进入考前结算。":`查看第${game.round}周班级回声，然后进入下一周。`;
+  if(game.phase==="final")return game.strategy?"核对六组结局与能量币奖励，并将结果计入大活动。":"查看六组结局，并完成成长策略单。";
+  const team=game.teams[clamp(game.activeTeam,0,5)];
+  if(team.pendingAdjustment.length){const key=team.pendingAdjustment[0];return `先为${team.name}完成${RESOURCE_INFO[key].name}调整，再抽取本周事件牌。`;}
+  if(game.currentCardId)return `为${team.name}选择一个具体行动方案，并用一句话说明理由。`;
+  return `请${team.name}所在小组抽取第${game.round}周事件牌。`;
+}
 function render(){
-  ui.phaseLabel.textContent=game.phase==="setup"?"人物准备":game.phase==="echo"?"班级回声":game.phase==="final"?"考前结算":"同班事件";ui.roundLabel.textContent=`第 ${game.round} / 6 周`;ui.lastEventText.textContent=game.lastEvent;
+  ui.phaseLabel.textContent=game.phase==="setup"?"人物准备":game.phase==="echo"?"班级回声":game.phase==="final"?"考前结算":"同班事件";ui.roundLabel.textContent=`第 ${game.round} / 6 周`;ui.lastEventText.textContent=nextActionText();
   ui.undoButton.disabled=modalLocked||!game.undoStack.length;ui.undoButton.title=game.undoStack.length?`撤回：${game.undoStack.at(-1).label}`:"暂无可撤回操作";ui.undoButton.setAttribute("aria-label",ui.undoButton.title);
   renderStory();renderCardStage();renderStudent();renderClass();renderBonds();
 }
