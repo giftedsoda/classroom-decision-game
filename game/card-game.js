@@ -347,6 +347,7 @@ function normalizeCardState(value){
 function loadCardState(){try{return normalizeCardState(JSON.parse(localStorage.getItem(CARD_STORAGE_KEY)));}catch{return createInitialState();}}
 let game=loadCardState();
 let modalLocked=false;
+let cardDrawAnimating=false;
 
 const byId=id=>document.getElementById(id);
 const ui={phaseLabel:byId("phaseLabel"),roundLabel:byId("roundLabel"),weekTheme:byId("weekTheme"),deckCount:byId("deckCount"),storyRibbon:byId("storyRibbon"),storyStage:byId("storyStage"),storyChapter:byId("storyChapter"),storyLine:byId("storyLine"),eventCard:byId("eventCard"),cardSymbol:byId("cardSymbol"),cardMeta:byId("cardMeta"),cardTitle:byId("cardTitle"),cardPreview:byId("cardPreview"),currentTurn:byId("currentTurn"),drawHint:byId("drawHint"),drawButton:byId("drawButton"),lastEventText:byId("lastEventText"),studentAvatar:byId("studentAvatar"),currentStudentName:byId("currentStudentName"),studentBackground:byId("studentBackground"),studentGoal:byId("studentGoal"),studentPressure:byId("studentPressure"),adultRelations:byId("adultRelations"),profileButton:byId("profileButton"),resourceGrid:byId("resourceGrid"),conditionChip:byId("conditionChip"),actionProgress:byId("actionProgress"),partnerFocus:byId("partnerFocus"),studentList:byId("studentList"),progressCopy:byId("progressCopy"),bondList:byId("bondList"),storyButton:byId("storyButton"),saveButton:byId("saveButton"),undoButton:byId("undoButton"),helpButton:byId("helpButton"),resetButton:byId("resetButton"),modalBackdrop:byId("modalBackdrop"),modal:byId("modal"),modalClose:byId("modalClose"),modalKicker:byId("modalKicker"),modalTitle:byId("modalTitle"),modalBody:byId("modalBody"),modalActions:byId("modalActions")};
@@ -355,7 +356,7 @@ function saveGame(){localStorage.setItem(CARD_STORAGE_KEY,JSON.stringify(game));
 function captureState(){const snapshot=clone(game);snapshot.undoStack=[];return snapshot;}
 function pushUndo(label){game.undoStack.push({label,state:captureState()});}
 function undo(){
-  if(modalLocked||!game.undoStack.length)return;
+  if(modalLocked||cardDrawAnimating||!game.undoStack.length)return;
   const stack=game.undoStack;const entry=stack.pop();game=normalizeCardState(entry.state);game.undoStack=stack;closeModal(true);saveGame();render();
   if(game.currentCardId)setTimeout(showCurrentCardModal,30);
 }
@@ -380,7 +381,7 @@ function renderStory(){
 }
 function renderCardStage(){
   const current=cardById(game.currentCardId);ui.eventCard.className="event-card back";
-  if(current){ui.eventCard.classList.add("revealed",current.type);ui.cardSymbol.textContent=CARD_TYPES[current.type].symbol;ui.cardMeta.textContent=`${SCOPE_NAMES[current.scope]} · ${CARD_TYPES[current.type].name}`;ui.cardTitle.textContent=current.title;ui.cardPreview.textContent=current.task;}
+  if(current){ui.eventCard.classList.add("revealed",current.type);if(cardDrawAnimating)ui.eventCard.classList.add("drawing");ui.cardSymbol.textContent=CARD_TYPES[current.type].symbol;ui.cardMeta.textContent=`${SCOPE_NAMES[current.scope]} · ${CARD_TYPES[current.type].name}`;ui.cardTitle.textContent=current.title;ui.cardPreview.textContent=current.task;}
   else{ui.cardSymbol.textContent="＊";ui.cardMeta.textContent="个人 · 机遇";ui.cardTitle.textContent="等待抽卡";ui.cardPreview.textContent="翻开这一周落到当前学生面前的事件。";}
   const remaining=(game.weeklyDecks[game.round]||[]).length;ui.deckCount.textContent=remaining;
   if(game.phase==="setup"){
@@ -421,12 +422,13 @@ function nextActionText(){
   if(game.phase==="final")return game.strategy?"核对六组结局与能量币奖励，并将结果计入大活动。":"查看六组结局，并完成成长策略单。";
   const team=game.teams[clamp(game.activeTeam,0,5)];
   if(team.pendingAdjustment.length){const key=team.pendingAdjustment[0];return `先为${team.name}完成${RESOURCE_INFO[key].name}调整，再抽取本周事件牌。`;}
-  if(game.currentCardId)return `为${team.name}选择一个具体行动方案，并用一句话说明理由。`;
+  if(game.currentCardId)return `为${team.name}选择一个具体行动方案；需要展开讨论时可口头说明理由。`;
   return `请${team.name}所在小组抽取第${game.round}周事件牌。`;
 }
 function render(){
   ui.phaseLabel.textContent=game.phase==="setup"?"人物准备":game.phase==="echo"?"班级回声":game.phase==="final"?"考前结算":"同班事件";ui.roundLabel.textContent=`第 ${game.round} / 6 周`;ui.lastEventText.textContent=nextActionText();
-  ui.undoButton.disabled=modalLocked||!game.undoStack.length;ui.undoButton.title=game.undoStack.length?`撤回：${game.undoStack.at(-1).label}`:"暂无可撤回操作";ui.undoButton.setAttribute("aria-label",ui.undoButton.title);
+  ui.undoButton.disabled=modalLocked||cardDrawAnimating||!game.undoStack.length;ui.undoButton.title=game.undoStack.length?`撤回：${game.undoStack.at(-1).label}`:"暂无可撤回操作";ui.undoButton.setAttribute("aria-label",ui.undoButton.title);
+  [ui.storyButton,ui.saveButton,ui.helpButton,ui.resetButton,ui.profileButton,ui.storyRibbon].forEach(control=>{control.disabled=cardDrawAnimating;});
   renderStory();renderCardStage();renderStudent();renderClass();renderBonds();
 }
 
@@ -464,10 +466,12 @@ function personalizedOptionDetail(card,index,optionIndex,option){
   return personalizedText(PERSONALIZED_OPTION_DETAILS[card.id]?.[index]?.[optionIndex]||OPTION_DETAILS[card.id]?.[optionIndex]||option.label,index,card.round);
 }
 function drawCard(){
-  if(game.phase!=="playing"||game.currentCardId)return;
+  if(game.phase!=="playing"||game.currentCardId||cardDrawAnimating)return;
   const team=game.teams[game.activeTeam];if(team.pendingAdjustment.length){showAdjustment(game.activeTeam);return;}
   const deck=game.weeklyDecks[game.round];if(!deck?.length)return;
-  pushUndo(`${team.name}抽取第${game.round}周事件`);const id=deck.shift();game.currentCardId=id;game.drawnCardIds.push(id);saveGame();render();showCurrentCardModal();
+  pushUndo(`${team.name}抽取第${game.round}周事件`);const id=deck.shift();game.currentCardId=id;game.drawnCardIds.push(id);cardDrawAnimating=true;saveGame();render();
+  const delay=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches?0:760;
+  setTimeout(()=>{cardDrawAnimating=false;render();showCurrentCardModal();},delay);
 }
 function mitigationHtml(effects){
   const team=game.teams[game.activeTeam],pair=pairForStudent(game.activeTeam),partner=game.teams[partnerIndex(game.activeTeam)];
@@ -487,8 +491,8 @@ function showCurrentCardModal(){
   ui.modalBody.querySelectorAll("[data-option]").forEach(btn=>btn.onclick=()=>{const note=byId("classNote")?.value.trim()||"";if(card.scope==="class"&&!note){byId("cardError").textContent="请先记录全班30秒讨论或投票结果。";return;}const option=options[Number(btn.dataset.option)];showActionConfirm(card,option,note);});
 }
 function showActionConfirm(card,option,note){
-  const body=`<p class="selected-action"><span>准备执行</span><strong>${escapeHtml(option.label)}</strong></p><div class="effect-box effect-result"><strong>执行后</strong>${effectChipsHtml(option.effects)}</div>${mitigationHtml(option.effects)}<label class="field-label">用一句话说明理由<textarea class="strategy-field compact-field" id="choiceReason" placeholder="这项做法更适合当前人物，因为……"></textarea></label><p class="form-error" id="cardError"></p>`;
-  openModal({kicker:`第${card.round}周 · 确认行动`,title:card.title,body,actions:[{label:"返回重选",secondary:true,onClick:showCurrentCardModal},{label:"执行这个方案",onClick:()=>{const reason=byId("choiceReason").value.trim();if(!reason){byId("cardError").textContent="请用一句话说明为什么选择这个方案。";return;}attemptResolve(card,option,`${option.label}：${reason}${note?`；全班记录：${note}`:""}`);}}],card:true,locked:true});
+  const body=`<p class="selected-action"><span>准备执行</span><strong>${escapeHtml(option.label)}</strong></p><div class="effect-box effect-result"><strong>执行后</strong>${effectChipsHtml(option.effects)}</div>${mitigationHtml(option.effects)}<label class="field-label">选择理由 <span class="optional-mark">选填，可跳过</span><textarea class="strategy-field compact-field" id="choiceReason" placeholder="需要记录时，可写下这项做法为什么适合当前人物"></textarea></label>`;
+  openModal({kicker:`第${card.round}周 · 确认行动`,title:card.title,body,actions:[{label:"返回重选",secondary:true,onClick:showCurrentCardModal},{label:"执行这个方案",onClick:()=>{const reason=byId("choiceReason").value.trim();attemptResolve(card,option,`${option.label}${reason?`：${reason}`:""}${note?`；全班记录：${note}`:""}`);}}],card:true,locked:true});
 }
 function attemptResolve(card,option,label){
   const noteField=byId("actionNote"),note=noteField?.value.trim()||"";if(noteField&&!note){const error=byId("cardError")||document.createElement("p");error.className="form-error";error.textContent="请先写下具体行动或全班讨论记录。";if(!error.parentNode)ui.modalBody.append(error);return;}
@@ -569,7 +573,7 @@ function showFinal(){
 }
 function showStrategyForm(){const s=game.strategy||{};openModal({kicker:"结课记录",title:"成长策略单",wide:true,body:`<label class="field-label">我们最重要的一次选择是什么？<textarea class="strategy-field" id="sChoice">${escapeHtml(s.choice||"")}</textarea></label><label class="field-label">当时牺牲了什么资源？<textarea class="strategy-field" id="sCost">${escapeHtml(s.cost||"")}</textarea></label><label class="field-label">遇到的困难是什么？<textarea class="strategy-field" id="sChallenge">${escapeHtml(s.challenge||"")}</textarea></label><label class="field-label">我们后来怎样调整？<textarea class="strategy-field" id="sAdjustment">${escapeHtml(s.adjustment||"")}</textarea></label><label class="field-label">这个策略怎样用于真实学习或生活？<textarea class="strategy-field" id="sTransfer">${escapeHtml(s.transfer||"")}</textarea></label><p class="form-error" id="strategyError"></p>`,actions:[{label:"返回结局",secondary:true,onClick:showFinal},{label:"完成策略单",onClick:()=>{const strategy={choice:byId("sChoice").value.trim(),cost:byId("sCost").value.trim(),challenge:byId("sChallenge").value.trim(),adjustment:byId("sAdjustment").value.trim(),transfer:byId("sTransfer").value.trim()};if(Object.values(strategy).some(v=>!v)){byId("strategyError").textContent="请完成五项记录，尽量引用游戏中的具体事件。";return;}pushUndo("完成成长策略单");game.strategy=strategy;saveGame();showFinal();}}]});}
 function showJournal(){const rows=game.drawnCardIds.map(id=>{const card=cardById(id),record=game.teams.flatMap(team=>team.history).find(item=>item.cardId===id);return {round:card.round,name:game.teams[record?.actor??0].name,...record,title:card.title,type:card.type};});openModal({kicker:"六周行动记录",title:`已处理 ${game.drawnCardIds.length} / 36 张牌`,wide:true,body:`<div class="echo-list">${rows.map(r=>`<div class="echo-row"><strong>第${r.round}周</strong><span>${escapeHtml(r.name)} · ${escapeHtml(r.title)}</span><span class="echo-changes">${CARD_TYPES[r.type].name}</span></div>`).join("")}</div>`,actions:[{label:"返回结局",onClick:showFinal}]});}
-function showRules(){openModal({kicker:"课堂规则",title:"六周同班抽卡沙盘",body:`<ul class="rule-list"><li>每周六张牌，机遇、挑战、抉择各2张；个人、搭档、全班为3、2、1张。</li><li>每张事件提供两个可执行方案。小组选择一项，再用一句话说明理由。</li><li>六位学生依次各抽一张，共6周、36次行动。没有骰子、地图和提前结束。</li><li>家庭或师生矛盾来自立场、责任和现实条件不同。两个方案都可能合理，但资源代价与沟通结果不同。</li><li>成人矛盾不会淘汰学生。“待沟通”会留在学生侧栏，“已协商”会写入行动记录和最终结局。</li><li>课堂只讨论虚构人物，不要求任何学生公开自己的成绩、家庭情况或真实冲突。</li><li>能量币不属于本局角色资源，六周过程中不能获得或消耗，只在最终结算时作为大活动奖励发放。</li><li>每组完成六周固定获得2枚，再按自我管理和关系成长各获得0–2枚，最终共获得2–6枚。</li><li>默契达到2解锁一次搭档支援：受损学生少损失1点，支援者损失同类资源1点。</li><li>资源归零不跳过行动，完成“删减任务、求助对象、执行时间”后恢复1点。</li><li>抽卡与处理结果是一个撤回步骤。撤回后同一张牌回到牌堆顶部。</li></ul>`,actions:[{label:"知道了",onClick:()=>closeModal(true)}]});}
+function showRules(){openModal({kicker:"课堂规则",title:"六周同班抽卡沙盘",body:`<ul class="rule-list"><li>每周六张牌，机遇、挑战、抉择各2张；个人、搭档、全班为3、2、1张。</li><li>每张事件提供两个可执行方案。小组选择一项；选择理由可以口头说明，也可以跳过不写。</li><li>六位学生依次各抽一张，共6周、36次行动。没有骰子、地图和提前结束。</li><li>家庭或师生矛盾来自立场、责任和现实条件不同。两个方案都可能合理，但资源代价与沟通结果不同。</li><li>成人矛盾不会淘汰学生。“待沟通”会留在学生侧栏，“已协商”会写入行动记录和最终结局。</li><li>课堂只讨论虚构人物，不要求任何学生公开自己的成绩、家庭情况或真实冲突。</li><li>能量币不属于本局角色资源，六周过程中不能获得或消耗，只在最终结算时作为大活动奖励发放。</li><li>每组完成六周固定获得2枚，再按自我管理和关系成长各获得0–2枚，最终共获得2–6枚。</li><li>默契达到2解锁一次搭档支援：受损学生少损失1点，支援者损失同类资源1点。</li><li>资源归零不跳过行动，完成“删减任务、求助对象、执行时间”后恢复1点。</li><li>抽卡与处理结果是一个撤回步骤。撤回后同一张牌回到牌堆顶部。</li></ul>`,actions:[{label:"知道了",onClick:()=>closeModal(true)}]});}
 function showStoryIndex(){openModal({kicker:"六周故事",title:"同一间教室里的六个星期",wide:true,body:`<div class="echo-list">${WEEK_STORIES.map((s,i)=>`<button class="choice-option" data-week="${i+1}"><strong>第${i+1}周 · ${escapeHtml(s.theme)}</strong><span>${escapeHtml(s.title)}：${escapeHtml(s.line)}</span></button>`).join("")}</div>`,actions:[{label:"关闭",onClick:()=>closeModal(true)}]});ui.modalBody.querySelectorAll("[data-week]").forEach(btn=>btn.onclick=()=>{const s=WEEK_STORIES[Number(btn.dataset.week)-1];openModal({kicker:s.stage,title:s.title,wide:true,body:`<div class="story-body">${s.body.map(p=>`<p>${escapeHtml(p)}</p>`).join("")}</div>`,actions:[{label:"返回六周目录",onClick:showStoryIndex}]});});}
 function loadSlots(){try{return JSON.parse(localStorage.getItem(CARD_SAVES_KEY))||{};}catch{return {};}}
 function slotSummary(slot){if(!slot?.state)return "空档位";const s=slot.state;return `${s.phase==="setup"?"准备阶段":s.phase==="final"?"已结算":`第${s.round}周 · 第${Math.min((s.activeTeam||0)+1,6)}位`} · ${s.drawnCardIds?.length||0}/36张`;}
