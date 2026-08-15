@@ -151,7 +151,7 @@ const els = {
   publicEventButton:$("publicEventButton"), teamBadge:$("teamBadge"), currentTeamTitle:$("currentTeamTitle"),
   resourceGrid:$("resourceGrid"), conditionChip:$("conditionChip"), positionLabel:$("positionLabel"), roleLabel:$("roleLabel"),
   die:$("die"), movePreview:$("movePreview"), actionButton:$("actionButton"), energyButton:$("energyButton"),
-  cooperateButton:$("cooperateButton"), undoButton:$("undoButton"), restartGameButton:$("restartGameButton"), turnNote:$("turnNote"), teamList:$("teamList"), progressCopy:$("progressCopy"),
+  cooperateButton:$("cooperateButton"), undoButton:$("undoButton"), restartGameButton:$("restartGameButton"), teamList:$("teamList"), progressCopy:$("progressCopy"),
   resetButton:$("resetButton"), saveButton:$("saveButton"), helpButton:$("helpButton"), storyButton:$("storyButton"), storyRibbon:$("storyRibbon"),
   storyStage:$("storyStage"), storyChapter:$("storyChapter"), storyLine:$("storyLine"), soundButton:$("soundButton"), renameButton:$("renameButton"),
   studentBackground:$("studentBackground"), studentGoal:$("studentGoal"), studentStrength:$("studentStrength"), studentPressure:$("studentPressure"),
@@ -345,8 +345,6 @@ function render() {
   els.undoButton.title = undoLabel;
   els.undoButton.setAttribute("aria-label", undoLabel);
   els.publicEventButton.disabled = tokenMoving || state.phase !== "playing" || state.round < 3 || state.publicEventDone || state.rolled !== null;
-  const last = team.history.at(-1);
-  els.turnNote.textContent = last ? last.note : "尚未开始行动。";
   if (state.phase === "setup") els.actionButton.textContent = "开始游戏";
   else if (state.phase === "playing" && team.completedTurn) els.actionButton.textContent = "本轮已完成";
   else if (state.phase === "playing" && state.rolled === null) els.actionButton.textContent = team.finished ? "完成本轮" : "掷骰前进";
