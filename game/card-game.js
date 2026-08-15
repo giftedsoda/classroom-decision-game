@@ -132,8 +132,8 @@ const CARD_STORY_EXTENSIONS = {
 
 const CARD_ACTION_OPTIONS = {
   "w1-o-personal":[
-    {label:"现在回应，并说出一个真实日常",effects:{self:{courage:1,time:1}}},
-    {label:"先记住名字，午休再问一件小事",effects:{self:{knowledge:1,time:1}}}
+    {label:"当场接住招呼，交换放学后的安排",effects:{self:{courage:2}}},
+    {label:"先观察半天，午休只问一条班级规则",effects:{self:{knowledge:2}}}
   ],
   "w1-c-personal":[
     {label:"先报平安，再取消今晚一项任务",effects:{self:{time:-1,courage:1}},assist:{resource:"time",action:"{partner}把当天作业和通知整理成一条消息，减少{self}回家后的补查时间"}},
@@ -161,21 +161,21 @@ const CARD_ACTION_OPTIONS = {
     {label:"先私下说明，约好周一一起澄清",effects:{self:{time:-1},partner:{time:-1}}}
   ],
   "w2-o-class":[
-    {label:"只登记不能临时取消的承诺时段",effects:{all:{time:1,courage:1}}},
-    {label:"匿名统计冲突时段，由老师调整一次",effects:{all:{knowledge:1,time:1}}}
+    {label:"实名登记不可取消的时段，由本人随时更新",effects:{all:{time:1,courage:1}}},
+    {label:"只做匿名冲突统计，由老师统一调整一次",effects:{all:{knowledge:2}}}
   ],
 
   "w3-o-personal":[
-    {label:"先收完器材，回教室再查完整消息",effects:{self:{time:1,courage:1}}},
-    {label:"利用这十分钟问清截图从哪里来",effects:{self:{knowledge:1,courage:1}}}
+    {label:"暂时离开消息，先完成器材交接",effects:{self:{time:2,courage:1}}},
+    {label:"立刻追查截图来源，只问最初转发者",effects:{self:{knowledge:2,time:-1}}}
   ],
   "w3-c-personal":[
     {label:"只联系最先转发的人，确认原始来源",effects:{self:{time:-1,knowledge:1}},assist:{resource:"time",action:"{partner}核对截图最早出现的群和转发时间，{self}只联系原始转发者"}},
     {label:"关掉群聊，明早请老师协助澄清",effects:{self:{courage:-1,time:1}}}
   ],
   "w3-o-pair":[
-    {label:"一起按时间顺序读完完整记录",effects:{self:{courage:1},partner:{courage:1},bond:1}},
-    {label:"各自复述误会来自哪一句话",effects:{self:{knowledge:1},partner:{knowledge:1},bond:1}}
+    {label:"共同复原消息时间线，先确认事实",effects:{self:{knowledge:1},partner:{knowledge:1},bond:1}},
+    {label:"停止继续查证，各自说明最在意的感受",effects:{self:{courage:1},partner:{courage:1},bond:1}}
   ],
   "w3-c-pair":[
     {label:"停止追问，约定放学后再听答复",effects:{self:{time:-1},partner:{courage:1},bond:1}},
@@ -183,8 +183,8 @@ const CARD_ACTION_OPTIONS = {
   ],
 
   "w4-o-personal":[
-    {label:"认领采访提纲，今晚交出五个问题",effects:{self:{courage:1,knowledge:1}}},
-    {label:"认领场记，负责文件名和拍摄顺序",effects:{self:{courage:1,time:1}}}
+    {label:"负责现场采访，明天当面问五个问题",effects:{self:{courage:2}}},
+    {label:"留在镜头后面，负责文件名和拍摄顺序",effects:{self:{knowledge:1,time:1}}}
   ],
   "w4-c-personal":[
     {label:"删掉新模板，先导出能播放的初版",effects:{self:{knowledge:1,time:-1}},assist:{resource:"time",action:"{partner}先把视频按人物和场景重命名，{self}专注导出最小版本"}},
@@ -221,12 +221,12 @@ const CARD_ACTION_OPTIONS = {
     {label:"整理物品、入口和备用方案清单",effects:{self:{knowledge:1,time:1}}}
   ],
   "w6-c-personal":[
-    {label:"当面归还，并请对方确认收到",effects:{self:{courage:1,time:-1}},assist:{resource:"time",action:"{partner}先联系物品主人确认见面地点，{self}负责当面归还"}},
-    {label:"交给老师保管，再发消息说明",effects:{self:{knowledge:1,time:-1}},assist:{resource:"time",action:"{partner}确认方老师或班长已经收下物品，{self}发送说明"}}
+    {label:"当面归还，把之前的拖延一起说明",effects:{self:{courage:2,time:-1}},assist:{resource:"time",action:"{partner}先联系物品主人确认见面地点，{self}负责当面归还"}},
+    {label:"交给老师登记保管，不在考前展开谈话",effects:{self:{knowledge:1,time:1}}}
   ],
   "w6-o-pair":[
     {label:"归还物品，并夹一张不催回复的便签",effects:{self:{courage:1},partner:{courage:1},bond:1}},
-    {label:"先归还物品，约好考后再继续谈",effects:{self:{time:1},partner:{time:1},bond:1}}
+    {label:"只确认物品收到，把关系问题留到考后",effects:{self:{time:2},partner:{time:2}}}
   ],
   "w6-c-pair":[
     {label:"收回追问，让对方考后再回答",effects:{self:{courage:1},partner:{courage:1},bond:1}},
@@ -235,7 +235,7 @@ const CARD_ACTION_OPTIONS = {
 };
 
 const OPTION_DETAILS = {
-  "w1-o-personal":["告诉对方自己每天坐哪班公交或放学后要做什么，再问一句对方的名字，给下次谈话留下具体开头。","先把对方名字记在课表边，午休时再问饮水机或作业本怎么轮值，用一件小事把招呼接下去。"],
+  "w1-o-personal":["当场告诉对方自己放学后要赶哪班公交或完成什么安排，再问一句对方的日常，让关系从真实信息开始。","先记住对方名字和座位，不急着谈自己的生活；午休时只问作业本怎样轮值，先弄清班级规则再决定是否继续聊。"],
   "w1-c-personal":["在站台先给家人报平安，把今晚最低优先级的一项划掉，并写明十点前停止。","完成值日带来的现实后果，把两项任务分别移到周三午休和晚饭后，不用熬夜补齐。"],
   "w1-d-personal":["把统一表贴进计划本，连续执行到下周一；每天只记录实际完成量和冲突时段，周一带数据再和老师谈调整。","今天放学前交一张替代表：保留每天基础练习和一次错题复盘，同时写明通勤、家务或训练占用的具体时段。"],
   "w1-o-pair":["陪赵思齐走到实验楼和体育馆，再告诉他午休可以去图书角；途中两人也各说一件放学后的日常。","在便签上画出教室、办公室和实验楼，标出三个地点和一位可以询问的人，放到赵思齐桌上。"],
@@ -247,16 +247,16 @@ const OPTION_DETAILS = {
   "w2-d-personal":["参加原先答应的比赛、社团或家庭活动，提前领取答疑材料，并约定周一向同学补问一处难点。","当天退出原活动，先把队服、名单或家庭任务交接给具体的人，再按时参加学校答疑。"],
   "w2-c-pair":["{self}在原群里说明此前只是猜测，并补上{partner}手机不在身边的事实；不替对方解释家庭细节。","两人先私下核对经过，约好周一早读一起向受影响的同学说明，不在周末继续扩大讨论。"],
   "w2-d-pair":["两人约在周一早读前一起找方老师，由{partner}说明家庭冲突，{self}只补充临时活动的时间。","{self}当天先向老师报备缺席，不代说家庭原因；{partner}周一自己补充，并确认之后怎样补上任务。"],
-  "w2-o-class":["只写训练、接送、家庭聚会等已经答应且不能临时取消的时段，不登记家长职业、成绩或家庭困难。","不写姓名，只统计周六上午、下午和晚上各有多少冲突；老师据人数调整一次答疑时间。"],
+  "w2-o-class":["每个人写下训练、接送、家庭聚会等不能临时取消的具体时段并署名；时间改变时由本人更新，便于老师逐一协调。","不写姓名和具体事项，只统计周六上午、下午和晚上各有多少人冲突；老师只能按人数整体调整一次答疑。"],
 
-  "w3-o-personal":["把器材送回仓库后再回教室查看完整记录，先确认受影响的人，不在操场上边猜边转述。","利用这十分钟只问最初看到截图的人消息来自哪里，不讨论谁考得好，也不急着公开回应。"],
+  "w3-o-personal":["把手机留在书包里，先和同学完成器材清点；十分钟后回教室只处理一条最重要的消息，不让截图占满整个下午。","暂时不收剩余器材，直接找到最初转发者核对来源和时间；只追查事实，但要接受这十分钟无法休息或完成原任务。"],
   "w3-c-personal":["只联系最先转发的人索要原图和时间，不逐条回复评论；晚上九点后停止查看群消息。","保存现有截图后关掉群聊，第二天早读把材料交给方老师，请老师协助确认传播范围。"],
   "w3-d-personal":["先私下把完整上下文发给直接受影响的人，听完对方理解后，再共同决定是否需要在群里澄清。","在班级群发完整记录，只说明被截掉的事实，不公开额外私聊；发完后停止争论。"],
-  "w3-o-pair":["两人从最早一条消息开始按时间读完记录，分别标出原话、转述和猜测，先把事实放回原位。","两人各用一分钟复述自己当时误解了哪句话，对方只纠正事实，不要求立刻恢复原来的关系。"],
+  "w3-o-pair":["两人从最早一条消息开始按时间读完记录，用三种标记区分原话、转述和猜测；这一方案先解决事实是否完整。","两人不再继续翻群记录，各用一分钟说明哪句话让自己难受或警惕；这一方案先处理感受，不保证今天就把事实全部查清。"],
   "w3-c-pair":["{self}停止追问，把问题改成放学后愿不愿意再谈；{partner}可以选择回答、改期或暂时不谈。","两人先分开整理情绪，约在第二天午休谈十分钟；期间不让第三位同学替任何一方传话。"],
   "w3-d-class":["只公开名次变化，不公布具体分数；允许学生选择匿名编号，并约定排名信息不拍照、不转发，三天后收集一次班级感受。","老师只公布不会、看漏和超时三类错因比例；全班按主要错因分组，每组整理一条第二天可以执行的复盘动作。"],
 
-  "w4-o-personal":["认领采访提纲，今晚先写五个不涉及成绩和家庭隐私的问题，第二天请两位同学试答。","认领场记，统一视频文件名并排好拍摄顺序；不负责表演，也不替剪辑者决定取舍。"],
+  "w4-o-personal":["认领采访者，今晚准备五个不涉及成绩和家庭隐私的问题；第二天由自己出镜或面对面追问，需要承担现场冷场。","不出镜也不负责提问，专门统一视频文件名、记录拍摄次数并安排顺序，让其他人能按时找到素材。"],
   "w4-c-personal":["关掉新模板，只按班会确定的结构剪出能从头播放的初版，九点半前导出并发到群里。","先把文件按人物和场景整理好，写一张交接清单，请有空的同学导出；{self}负责第二天核对。"],
   "w4-d-personal":["接下三天协调，但只在午休和放学前各检查一次；不替任何人重拍，也不承担所有修改。","向老师说明完整协调会影响现有安排，只认领旧照片排序或采访提纲，并给出明确交付时间。"],
   "w4-c-pair":["把移走的原视频恢复到共享文件夹，向{partner}说明改动理由；只有对方同意后才使用新版。","两版都保留，由{partner}在午休前做最终选择；{self}只负责说明时间和画面差异。"],
@@ -271,9 +271,9 @@ const OPTION_DETAILS = {
   "w5-c-class":["取消统一留校，由需要补交或确实需要答疑的人登记二十分钟时段，其他人按原通勤安排离校。","保留四十分钟留校，但公交换乘、家庭接送或照顾责任受影响的人可以说明后退出，不公开理由。"],
 
   "w6-o-personal":["按考试当天的出门时间走一遍路线，同时记下堵车时换乘的站点和最晚出发时间。","逐项检查准考证、文具、入口和闹钟，缺一项就当场补齐，不再增加复习资料。"],
-  "w6-c-personal":["第二天早读当面交还物品，请对方检查并说收到；若有损坏或缺件，当场说明，不把东西悄悄放下。","把物品装袋写好姓名，交给方老师或班长保管，再发一条说明；由接收人回复确认后才算完成。"],
+  "w6-c-personal":["第二天早读当面交还物品，请对方检查并说收到，同时由自己说明为什么拖到现在；可能占用考前时间，也可能把事情真正说开。","把物品装袋写好姓名，交给方老师登记保管，只发送领取地点和确认方式；先确保物品不丢失，不在考前处理关系问题。"],
   "w6-d-personal":["把更高目标列为第一志愿，同时写出可接受的备选学校、分数风险和最后两天仍要完成的准备，再向家长与老师确认。","按兴趣、通勤和家庭承受条件选择更匹配的方向，同时用近三次成绩说明依据，并保留一个分数相近的备选方案。"],
-  "w6-o-pair":["把物品交还时夹一张两句话的便签：只说明自己的误解和歉意，不写请你马上回复。","先确认物品完整归还，再约定中考结束后找十分钟继续谈；今天不把关系是否恢复变成新任务。"],
+  "w6-o-pair":["归还借来的物品，在里面夹一张不催回复的便签，主动说明自己之前的误解或为难；对方可以不在考前回答。","只核对物品数量并确认收到，不写便签也不讨论误会；双方把具体谈话约到中考结束后，先保护最后一晚的准备时间。"],
   "w6-c-pair":["{self}收回刚才的追问，明确{partner}可以考后再回答；两人只核对物品是否已经归还。","现在停止谈话，各自回座位整理准考证和文具；不再请旁人代传答案或判断谁对谁错。"],
   "w6-d-class":["全班跟随投影逐项核对准考证、文具、路线和备用联系人；发现缺项的人当场写下补齐负责人。","用五分钟补拍一个不要求整齐口号的全班镜头；物品核对改由各搭档按清单完成并签字。"]
 };
@@ -374,17 +374,6 @@ function pairForStudent(index){return PAIRS.find(pair=>pair.members.includes(ind
 function partnerIndex(index){const pair=pairForStudent(index);return pair.members.find(i=>i!==index);}
 function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
 function escapeHtml(value=""){return String(value).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));}
-function effectEntries(effects={}){
-  const entries=[];
-  for(const [target,values] of Object.entries(effects)){
-    if(target==="bond"){entries.push({key:"bond",text:`默契${values>0?"+":""}${values}`});continue;}
-    const prefix=target==="partner"?"搭档·":target==="all"?"全班·":"";
-    Object.entries(values).forEach(([key,val])=>entries.push({key,text:`${prefix}${RESOURCE_INFO[key].name}${val>0?"+":""}${val}`}));
-  }
-  return entries;
-}
-function formatEffects(effects={}){return effectEntries(effects).map(item=>item.text).join(" · ")||"资源不变";}
-function effectChipsHtml(effects={}){const entries=effectEntries(effects);return `<div class="effect-chips">${entries.length?entries.map(item=>`<span class="effect-chip effect-${item.key}">${escapeHtml(item.text)}</span>`).join(""):`<span class="effect-chip">资源不变</span>`}</div>`;}
 function renderStory(){
   const story=WEEK_STORIES[clamp(game.round,1,6)-1];ui.weekTheme.textContent=`第${game.round}周 · ${story.theme}`;ui.storyStage.textContent=story.stage;ui.storyChapter.textContent=story.title;ui.storyLine.textContent=story.line;
 }
@@ -500,18 +489,19 @@ function mitigationHtml(card,option){
   const partnerAfter=partner.resources[key]+(option.effects.partner?.[key]||0)+(option.effects.all?.[key]||0);
   if(actorLoss>=0||partnerAfter<1||game.bonds[pair.id]<2||game.pairAssistRounds[pair.id].includes(game.round))return "";
   const action=personalizedText(config.action,actor,card.round);
-  return `<div class="assist-box"><strong>这个事件可以由搭档分担</strong><div class="assist-decision"><span>${escapeHtml(action)}</span><label><input type="radio" name="pairAssist" value="" checked><i><strong>本次不使用支援</strong><small>按原资源结果执行，支援机会留到以后</small></i></label><label><input type="radio" name="pairAssist" value="actor:${key}"><i><strong>${escapeHtml(team.name)}接受${escapeHtml(partner.name)}支援</strong><small>${escapeHtml(team.name)}${RESOURCE_INFO[key].name} ${actorLoss} → ${Math.min(0,actorLoss+1)}；${escapeHtml(partner.name)}${RESOURCE_INFO[key].name}-1</small></i></label></div></div>`;
+  return `<div class="assist-box"><strong>这个事件可以由搭档分担</strong><div class="assist-decision"><span>${escapeHtml(action)}</span><label><input type="radio" name="pairAssist" value="" checked><i><strong>本次不使用支援</strong><small>由本人承担这次行动的全部后果，支援机会留到以后</small></i></label><label><input type="radio" name="pairAssist" value="actor:${key}"><i><strong>${escapeHtml(team.name)}接受${escapeHtml(partner.name)}支援</strong><small>${escapeHtml(team.name)}的${RESOURCE_INFO[key].name}损失会减轻；${escapeHtml(partner.name)}同时承担同类资源代价</small></i></label></div></div>`;
 }
 function optionsForCard(card){return card.options||CARD_ACTION_OPTIONS[card.id]||[];}
 function showCurrentCardModal(){
   const card=cardById(game.currentCardId);if(!card)return;const index=game.activeTeam,type=CARD_TYPES[card.type],options=optionsForCard(card);const scopeNote=card.scope==="pair"?`同时影响 ${game.teams[index].name} 与 ${game.teams[partnerIndex(index)].name}`:card.scope==="class"?"由全班讨论或投票，结果影响六位学生":"根据当前学生的背景处理";
   const conflictTag=card.conflictSource?`<span class="tag conflict">${escapeHtml(CONFLICT_NAMES[card.conflictSource])}</span>`:"";
-  const body=`<div class="scope-note"><span class="tag ${card.type}">${type.symbol} ${type.name}</span><span class="tag">${SCOPE_NAMES[card.scope]}卡</span>${conflictTag}<span class="tag">${escapeHtml(scopeNote)}</span></div>${cardNarrativeHtml(card,index)}<div class="task-box"><strong>本次关注</strong><br>${escapeHtml(personalizedText(card.task,index,card.round))}</div><div class="option-heading"><strong>选择一个执行方案</strong><span>先看具体行动，再比较资源代价</span></div><div class="choice-grid">${options.map((option,i)=>`<button class="choice-option" data-option="${i}"><strong>${String.fromCharCode(65+i)} · ${escapeHtml(option.label)}</strong><p>${escapeHtml(personalizedOptionDetail(card,index,i,option))}</p>${effectChipsHtml(option.effects)}</button>`).join("")}</div>${card.scope==="class"?`<label class="field-label">30秒讨论或投票记录 <span class="optional-mark">选填，可跳过</span><textarea class="strategy-field compact-field" id="classNote" placeholder="需要记录时，可写下多数选择及另一种意见怎样被照顾"></textarea></label>`:""}<p class="form-error" id="cardError"></p>`;
+  const body=`<div class="scope-note"><span class="tag ${card.type}">${type.symbol} ${type.name}</span><span class="tag">${SCOPE_NAMES[card.scope]}卡</span>${conflictTag}<span class="tag">${escapeHtml(scopeNote)}</span></div>${cardNarrativeHtml(card,index)}<div class="task-box"><strong>本次关注</strong><br>${escapeHtml(personalizedText(card.task,index,card.round))}</div><div class="option-heading"><strong>选择一个执行方案</strong><span>比较行动、责任和后续影响</span></div><div class="choice-grid">${options.map((option,i)=>`<button class="choice-option" data-option="${i}"><strong>${String.fromCharCode(65+i)} · ${escapeHtml(option.label)}</strong><p>${escapeHtml(personalizedOptionDetail(card,index,i,option))}</p></button>`).join("")}</div>${card.scope==="class"?`<label class="field-label">30秒讨论或投票记录 <span class="optional-mark">选填，可跳过</span><textarea class="strategy-field compact-field" id="classNote" placeholder="需要记录时，可写下多数选择及另一种意见怎样被照顾"></textarea></label>`:""}<p class="form-error" id="cardError"></p>`;
   openModal({kicker:`第${card.round}周 · ${SCOPE_NAMES[card.scope]}${type.name}卡`,title:card.title,body,actions:[],card:true,locked:true});
   ui.modalBody.querySelectorAll("[data-option]").forEach(btn=>btn.onclick=()=>{const note=byId("classNote")?.value.trim()||"",option=options[Number(btn.dataset.option)];showActionConfirm(card,option,note);});
 }
 function showActionConfirm(card,option,note){
-  const body=`<p class="selected-action"><span>准备执行</span><strong>${escapeHtml(option.label)}</strong></p><div class="effect-box effect-result"><strong>执行后</strong>${effectChipsHtml(option.effects)}</div>${mitigationHtml(card,option)}<label class="field-label">选择理由 <span class="optional-mark">选填，可跳过</span><textarea class="strategy-field compact-field" id="choiceReason" placeholder="需要记录时，可写下这项做法为什么适合当前人物"></textarea></label>`;
+  const optionIndex=optionsForCard(card).indexOf(option),detail=personalizedOptionDetail(card,game.activeTeam,optionIndex,option);
+  const body=`<div class="selected-action"><span>准备执行</span><strong>${escapeHtml(option.label)}</strong><p>${escapeHtml(detail)}</p></div>${mitigationHtml(card,option)}<label class="field-label">选择理由 <span class="optional-mark">选填，可跳过</span><textarea class="strategy-field compact-field" id="choiceReason" placeholder="需要记录时，可写下这项做法为什么适合当前人物"></textarea></label>`;
   openModal({kicker:`第${card.round}周 · 确认行动`,title:card.title,body,actions:[{label:"返回重选",secondary:true,onClick:showCurrentCardModal},{label:"执行这个方案",onClick:()=>{const reason=byId("choiceReason").value.trim();attemptResolve(card,option,`${option.label}${reason?`：${reason}`:""}${note?`；全班记录：${note}`:""}`);}}],card:true,locked:true});
 }
 function attemptResolve(card,option,label){
