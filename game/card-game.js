@@ -307,15 +307,15 @@ const CARDS = [
   {id:"w6-d-class",round:6,type:"decision",scope:"class",title:"最后一节班会留下什么",story:"最后一节班会只剩五分钟，全班投票决定把时间用来核对物品与路线，还是每人说出一条受挫后的调整。前者降低现实遗漏，后者把六周经验带进考场，老师会照顾没有被选中的需要。",options:[{label:"统一核对物品和路线",effects:{all:{time:1}}},{label:"分享受挫后的调整",effects:{all:{courage:1}}}],task:"全班讨论30秒并投票，再为另一项安排一个补充办法。"}
 ];
 
-const RESOURCE_KEYS = ["courage","knowledge","time","energy"];
+const RESOURCE_KEYS = ["courage","knowledge","time"];
 const CORE_RESOURCE_KEYS = ["courage","knowledge","time"];
-const RESOURCE_INFO = {courage:{name:"勇气",max:12},knowledge:{name:"知识",max:12},time:{name:"时间",max:12},energy:{name:"能量币",max:6}};
+const RESOURCE_INFO = {courage:{name:"勇气",max:12},knowledge:{name:"知识",max:12},time:{name:"时间",max:12}};
 const RELATION_INFO = {family:{name:"家庭沟通"},teacher:{name:"师生沟通"}};
 const TEAM_COLORS_V2 = ["#205b47","#426b84","#a84a43","#6c5a7e","#8a6426","#53614b"];
 
 function makeTeam(index){
   const p=STUDENT_PROFILES[index];
-  return {id:index+1,profileId:p.id,name:p.name,color:TEAM_COLORS_V2[index],resources:{courage:5,knowledge:5,time:10,energy:0},history:[],pendingAdjustment:[],adjustments:[],energyUsedRounds:[],adultRelations:{family:{status:"clear",title:"暂无待沟通事项",note:""},teacher:{status:"clear",title:"暂无待沟通事项",note:""}},strategy:null};
+  return {id:index+1,profileId:p.id,name:p.name,color:TEAM_COLORS_V2[index],resources:{courage:5,knowledge:5,time:10},history:[],pendingAdjustment:[],adjustments:[],adultRelations:{family:{status:"clear",title:"暂无待沟通事项",note:""},teacher:{status:"clear",title:"暂无待沟通事项",note:""}},strategy:null};
 }
 function shuffle(list){
   const copy=[...list];
@@ -326,7 +326,7 @@ function createDecks(){
   return Object.fromEntries(Array.from({length:6},(_,i)=>{const round=i+1;return [round,shuffle(CARDS.filter(c=>c.round===round).map(c=>c.id))];}));
 }
 function createInitialState(){
-  return {schemaVersion:CARD_SCHEMA_VERSION,phase:"setup",round:1,activeTeam:0,weeklyDecks:createDecks(),drawnCardIds:[],currentCardId:null,bonds:{desk:1,physics:1,classwork:1},pairAssistUsed:{desk:false,physics:false,classwork:false},roundSixRewardApplied:false,weeklyEchoes:[],story:{prologueSeen:false,profilesSeen:[],chaptersSeen:[]},teams:Array.from({length:6},(_,i)=>makeTeam(i)),undoStack:[],sound:true,reducedMotion:false,lastEvent:"人物的选择、代价和同伴影响会记录在这里。",strategy:null};
+  return {schemaVersion:CARD_SCHEMA_VERSION,phase:"setup",round:1,activeTeam:0,weeklyDecks:createDecks(),drawnCardIds:[],currentCardId:null,bonds:{desk:1,physics:1,classwork:1},pairAssistUsed:{desk:false,physics:false,classwork:false},weeklyEchoes:[],story:{prologueSeen:false,profilesSeen:[],chaptersSeen:[]},teams:Array.from({length:6},(_,i)=>makeTeam(i)),undoStack:[],sound:true,reducedMotion:false,lastEvent:"人物的选择、代价和同伴影响会记录在这里。",strategy:null};
 }
 function clone(value){return JSON.parse(JSON.stringify(value));}
 function normalizeCardState(value){
@@ -334,8 +334,8 @@ function normalizeCardState(value){
   value.undoStack||=[]; value.weeklyDecks||=createDecks(); value.drawnCardIds||=[]; value.weeklyEchoes||=[];
   value.story||={prologueSeen:false,profilesSeen:[],chaptersSeen:[]}; value.story.profilesSeen||=[]; value.story.chaptersSeen||=[];
   value.bonds||={desk:1,physics:1,classwork:1}; value.pairAssistUsed||={desk:false,physics:false,classwork:false};
-  value.teams||=Array.from({length:6},(_,i)=>makeTeam(i));
-  value.teams.forEach((team,i)=>{team.history||=[];team.pendingAdjustment||=[];team.adjustments||=[];team.energyUsedRounds||=[];team.adultRelations||={family:{status:"clear",title:"暂无待沟通事项",note:""},teacher:{status:"clear",title:"暂无待沟通事项",note:""}};team.adultRelations.family||={status:"clear",title:"暂无待沟通事项",note:""};team.adultRelations.teacher||={status:"clear",title:"暂无待沟通事项",note:""};team.color||=TEAM_COLORS_V2[i];});
+  value.teams||=Array.from({length:6},(_,i)=>makeTeam(i));delete value.roundSixRewardApplied;
+  value.teams.forEach((team,i)=>{team.history||=[];team.pendingAdjustment||=[];team.adjustments||=[];team.resources||={courage:5,knowledge:5,time:10};delete team.resources.energy;delete team.energyUsedRounds;team.adultRelations||={family:{status:"clear",title:"暂无待沟通事项",note:""},teacher:{status:"clear",title:"暂无待沟通事项",note:""}};team.adultRelations.family||={status:"clear",title:"暂无待沟通事项",note:""};team.adultRelations.teacher||={status:"clear",title:"暂无待沟通事项",note:""};team.color||=TEAM_COLORS_V2[i];});
   return value;
 }
 function loadCardState(){try{return normalizeCardState(JSON.parse(localStorage.getItem(CARD_STORAGE_KEY)));}catch{return createInitialState();}}
@@ -407,7 +407,7 @@ function renderStudent(){
 }
 function renderClass(){
   const done=game.round===6&&game.phase==="final"?6:game.activeTeam;ui.progressCopy.textContent=`本周 ${game.phase==="echo"||game.phase==="final"?6:done} / 6 人完成`;
-  ui.studentList.innerHTML="";game.teams.forEach((team,index)=>{const button=document.createElement("button");button.className=`student-card ${index===game.activeTeam&&game.phase==="playing"?"active":""} ${index<game.activeTeam||game.phase==="echo"||game.phase==="final"?"done":""}`;button.innerHTML=`<div class="student-card-head"><span class="student-index" style="background:${team.color}">${index+1}</span><strong>${escapeHtml(team.name)}</strong></div><small>${escapeHtml(STUDENT_PROFILES[index].goal)}</small><div class="resource-mini"><span>勇 ${team.resources.courage}</span><span>知 ${team.resources.knowledge}</span><span>时 ${team.resources.time}</span><span>能 ${team.resources.energy}</span></div>`;button.onclick=()=>showProfile(index);ui.studentList.append(button);});
+  ui.studentList.innerHTML="";game.teams.forEach((team,index)=>{const button=document.createElement("button");button.className=`student-card ${index===game.activeTeam&&game.phase==="playing"?"active":""} ${index<game.activeTeam||game.phase==="echo"||game.phase==="final"?"done":""}`;button.innerHTML=`<div class="student-card-head"><span class="student-index" style="background:${team.color}">${index+1}</span><strong>${escapeHtml(team.name)}</strong></div><small>${escapeHtml(STUDENT_PROFILES[index].goal)}</small><div class="resource-mini"><span>勇 ${team.resources.courage}</span><span>知 ${team.resources.knowledge}</span><span>时 ${team.resources.time}</span></div>`;button.onclick=()=>showProfile(index);ui.studentList.append(button);});
 }
 function renderBonds(){
   ui.bondList.innerHTML=PAIRS.map(pair=>{const a=game.teams[pair.members[0]],b=game.teams[pair.members[1]],value=game.bonds[pair.id];let stateText=value>=3?"共同结局":value>=2?(game.pairAssistUsed[pair.id]?"支援已使用":"支援可用"):value===0?"需要沟通":"建立中";return `<article class="bond-card"><div class="bond-card-head"><div><strong>${escapeHtml(a.name)} × ${escapeHtml(b.name)}</strong><em>${pair.name} · ${escapeHtml(pair.theme)}</em></div><span class="bond-value">${value}/3</span></div><div class="bond-progress"><div class="bond-dots" aria-hidden="true">${[1,2,3].map(n=>`<i class="bond-dot ${value>=n?"filled":""}"></i>`).join("")}</div><span class="bond-state">${stateText}</span></div></article>`;}).join("");
@@ -465,11 +465,9 @@ function mitigationHtml(effects){
   const actorEffects={},partnerEffects={};[effects.all||{},effects.self||{}].forEach(values=>Object.entries(values).forEach(([key,value])=>{actorEffects[key]=(actorEffects[key]||0)+value;}));[effects.all||{},effects.partner||{}].forEach(values=>Object.entries(values).forEach(([key,value])=>{partnerEffects[key]=(partnerEffects[key]||0)+value;}));
   const selfEntries=Object.entries(actorEffects).filter(([,value])=>value<0),partnerEntries=Object.entries(partnerEffects).filter(([,value])=>value<0);
   if(!selfEntries.length&&!partnerEntries.length)return "";
-  const energyOptions=selfEntries.map(([key])=>`<option value="actor:${key}">${RESOURCE_INFO[key].name}</option>`).join("");
   const assistChoices=selfEntries.map(([key,value])=>({value:`actor:${key}`,name:team.name,supporter:partner.name,key,loss:value,canPay:partner.resources[key]+(partnerEffects[key]||0)>=1})).concat(partnerEntries.map(([key,value])=>({value:`partner:${key}`,name:partner.name,supporter:team.name,key,loss:value,canPay:team.resources[key]+(actorEffects[key]||0)>=1}))).filter(choice=>choice.canPay);
-  const energy=Boolean(energyOptions)&&team.resources.energy>0&&!team.energyUsedRounds.includes(game.round),assist=assistChoices.length&&game.bonds[pair.id]>=2&&!game.pairAssistUsed[pair.id];if(!energy&&!assist)return "";
-  const assistHtml=assist?`<div class="assist-decision"><span>由受损学生本人决定，支援者承担同类资源</span><label><input type="radio" name="pairAssist" value="" checked><i><strong>保留搭档支援</strong><small>本次按原资源结果执行</small></i></label>${assistChoices.map(choice=>`<label><input type="radio" name="pairAssist" value="${choice.value}"><i><strong>${choice.name}接受支援</strong><small>${choice.name}${RESOURCE_INFO[choice.key].name} ${choice.loss} → ${Math.min(0,choice.loss+1)}；${choice.supporter}${RESOURCE_INFO[choice.key].name}-1</small></i></label>`).join("")}</div>`:"";
-  return `<div class="assist-box"><strong>可选的损失保护</strong>${energy?`<label class="energy-protect"><input type="checkbox" id="useEnergy"><span>使用1枚能量币，抵消1点 <select id="energyKey">${energyOptions}</select></span></label>`:""}${assistHtml}</div>`;
+  const assist=assistChoices.length&&game.bonds[pair.id]>=2&&!game.pairAssistUsed[pair.id];if(!assist)return "";
+  return `<div class="assist-box"><strong>可选的搭档支援</strong><div class="assist-decision"><span>由受损学生本人决定，支援者承担同类资源</span><label><input type="radio" name="pairAssist" value="" checked><i><strong>保留搭档支援</strong><small>本次按原资源结果执行</small></i></label>${assistChoices.map(choice=>`<label><input type="radio" name="pairAssist" value="${choice.value}"><i><strong>${choice.name}接受支援</strong><small>${choice.name}${RESOURCE_INFO[choice.key].name} ${choice.loss} → ${Math.min(0,choice.loss+1)}；${choice.supporter}${RESOURCE_INFO[choice.key].name}-1</small></i></label>`).join("")}</div></div>`;
 }
 function optionsForCard(card){return card.options||CARD_ACTION_OPTIONS[card.id]||[];}
 function showCurrentCardModal(){
@@ -485,7 +483,7 @@ function showActionConfirm(card,option,note){
 }
 function attemptResolve(card,option,label){
   const noteField=byId("actionNote"),note=noteField?.value.trim()||"";if(noteField&&!note){const error=byId("cardError")||document.createElement("p");error.className="form-error";error.textContent="请先写下具体行动或全班讨论记录。";if(!error.parentNode)ui.modalBody.append(error);return;}
-  const mitigation={energy:byId("useEnergy")?.checked?byId("energyKey")?.value:null,assist:document.querySelector('input[name="pairAssist"]:checked')?.value||null};resolveCard(card,option.effects,`${label}${note?`：${note}`:""}`,mitigation,option.relations||[]);
+  const mitigation={assist:document.querySelector('input[name="pairAssist"]:checked')?.value||null};resolveCard(card,option.effects,`${label}${note?`：${note}`:""}`,mitigation,option.relations||[]);
 }
 function applyResource(teamIndex,key,delta,changes){
   const team=game.teams[teamIndex],before=team.resources[key],after=clamp(before+delta,0,RESOURCE_INFO[key].max);team.resources[key]=after;const actual=after-before;if(actual)changes.push({teamIndex,key,delta:actual});
@@ -509,7 +507,6 @@ function resolveCard(card,effects,decisionText,mitigation={},relations=[]){
     const targets=target==="self"?[actor]:target==="partner"?[partner]:target==="all"?game.teams.map((_,i)=>i):[];
     targets.forEach(i=>Object.entries(values).forEach(([key,delta])=>applyResource(i,key,delta,changes)));
   }
-  if(mitigation.energy){const [,key]=mitigation.energy.split(":");applyResource(actor,key,1,changes);applyResource(actor,"energy",-1,changes);game.teams[actor].energyUsedRounds.push(game.round);}
   let assistSummary="";
   if(mitigation.assist&&!game.pairAssistUsed[pair.id]){const [target,key]=mitigation.assist.split(":"),supportedIndex=target==="partner"?partner:actor,supporterIndex=supportedIndex===actor?partner:actor;applyResource(supportedIndex,key,1,changes);applyResource(supporterIndex,key,-1,changes);game.pairAssistUsed[pair.id]=true;assistSummary=`${game.teams[supportedIndex].name}接受${game.teams[supporterIndex].name}的搭档支援`;}
   applyAdultRelations(actor,relations,changes);
@@ -540,7 +537,6 @@ function showWeeklyEcho(){
 function advanceWeek(){
   closeModal(true);if(game.round>=6){game.phase="final";game.activeTeam=5;game.lastEvent="六周36张事件牌全部处理完成，所有学生同时进入考前结算。";saveGame();render();showFinal();return;}
   game.round+=1;game.activeTeam=0;game.phase="playing";
-  if(game.round===6&&!game.roundSixRewardApplied){PAIRS.filter(p=>game.bonds[p.id]>=3).forEach(pair=>pair.members.forEach(i=>applyResource(i,"energy",1,[])));game.roundSixRewardApplied=true;game.lastEvent="默契达到3的搭档进入第六周时，各获得1枚能量币。";}
   saveGame();render();showWeekStory();
 }
 function showAdjustment(index){
@@ -548,14 +544,23 @@ function showAdjustment(index){
   openModal({kicker:"资源归零 · 调整任务",title:`${team.name}需要先调整${RESOURCE_INFO[key].name}`,body:`<p>资源归零不会跳过本周。请把调整写成可以执行的安排，完成后${RESOURCE_INFO[key].name}恢复到1点。</p><label class="field-label">删掉或缩减的任务<textarea class="text-field" id="adjustCut"></textarea></label><label class="field-label">准备向谁求助<input class="text-field" id="adjustHelp"></label><label class="field-label">具体执行时间<input class="text-field" id="adjustWhen" placeholder="例如：今晚九点前"></label><p class="form-error" id="adjustError"></p>`,actions:[{label:"完成调整",onClick:()=>{const cut=byId("adjustCut").value.trim(),help=byId("adjustHelp").value.trim(),when=byId("adjustWhen").value.trim();if(!cut||!help||!when){byId("adjustError").textContent="三项都要写清楚，不能只填“合理安排”。";return;}pushUndo(`${team.name}完成资源调整`);team.resources[key]=1;team.pendingAdjustment.shift();team.adjustments.push({round:game.round,key,cut,help,when});game.lastEvent=`${team.name}缩减“${cut}”，向${help}求助，并约定${when}执行，${RESOURCE_INFO[key].name}恢复1点。`;closeModal(true);saveGame();render();if(team.pendingAdjustment.length)setTimeout(()=>showAdjustment(index),50);}}],locked:true});
 }
 function portrait(team){const names={courage:"探索者",knowledge:"学习者",time:"规划者"},core=CORE_RESOURCE_KEYS.map(key=>[key,team.resources[key]]),values=core.map(([,value])=>value),highest=Math.max(...values);if(highest-Math.min(...values)<=2)return "平衡成长者";return core.filter(([,value])=>value===highest).map(([key])=>names[key]).join(" × ");}
+function endingEnergyReward(team,index){
+  const values=CORE_RESOURCE_KEYS.map(key=>team.resources[key]),minimum=Math.min(...values),adjusted=team.adjustments.length>0&&!team.pendingAdjustment.length;
+  let selfManagement=0;if(!team.pendingAdjustment.length){if(minimum>=5||(adjusted&&minimum>=3))selfManagement=2;else if(minimum>=3||adjusted)selfManagement=1;}
+  const bond=game.bonds[pairForStudent(index).id],managed=Object.values(team.adultRelations||{}).some(relation=>relation.status==="managed");
+  const relationship=bond>=3||(bond>=2&&managed)?2:bond>=2||managed?1:0;
+  return {completion:2,selfManagement,relationship,total:2+selfManagement+relationship};
+}
 function showFinal(){
-  const endings=game.teams.map((team,i)=>{const pair=pairForStudent(i),shared=game.bonds[pair.id]>=3?`与${game.teams[partnerIndex(i)].name}形成“${pair.theme}”共同结局。`:"这段关系仍保留下一次主动沟通的空间。";const adjustment=team.adjustments.at(-1),family=team.adultRelations.family,teacher=team.adultRelations.teacher,relationSummary=`家庭沟通：${relationStatusLabel(family)}${family.status!=="clear"?`（${family.title}）`:""}；师生沟通：${relationStatusLabel(teacher)}${teacher.status!=="clear"?`（${teacher.title}）`:""}。`;return `<article class="ending-card"><h3>${escapeHtml(team.name)}</h3><span class="portrait">${portrait(team)}</span><p>${adjustment?`曾在资源归零后缩减“${escapeHtml(adjustment.cut)}”，并向${escapeHtml(adjustment.help)}求助。`:"六周中没有资源归零，但仍需要从记录中选出一次主动调整。"}</p><p>${escapeHtml(relationSummary)}</p><p>${escapeHtml(shared)}</p></article>`;}).join("");
+  const rewards=game.teams.map(endingEnergyReward),totalEnergy=rewards.reduce((sum,reward)=>sum+reward.total,0);
+  const endings=game.teams.map((team,i)=>{const pair=pairForStudent(i),reward=rewards[i],shared=game.bonds[pair.id]>=3?`与${game.teams[partnerIndex(i)].name}形成“${pair.theme}”共同结局。`:"这段关系仍保留下一次主动沟通的空间。";const adjustment=team.adjustments.at(-1),family=team.adultRelations.family,teacher=team.adultRelations.teacher,relationSummary=`家庭沟通：${relationStatusLabel(family)}${family.status!=="clear"?`（${family.title}）`:""}；师生沟通：${relationStatusLabel(teacher)}${teacher.status!=="clear"?`（${teacher.title}）`:""}。`;return `<article class="ending-card"><div class="ending-card-head"><div><h3>${escapeHtml(team.name)}</h3><span class="portrait">${portrait(team)}</span></div><div class="energy-award"><span>本环节奖励</span><strong>+${reward.total}枚</strong></div></div><div class="reward-breakdown"><span>完成旅程 +${reward.completion}</span><span>自我管理 +${reward.selfManagement}</span><span>关系成长 +${reward.relationship}</span></div><p>${adjustment?`曾在资源归零后缩减“${escapeHtml(adjustment.cut)}”，并向${escapeHtml(adjustment.help)}求助。`:"六周中没有资源归零，但仍需要从记录中选出一次主动调整。"}</p><p>${escapeHtml(relationSummary)}</p><p>${escapeHtml(shared)}</p></article>`;}).join("");
   const strategy=game.strategy?`<div class="strategy-summary"><strong>已完成成长策略单</strong><br>${escapeHtml(game.strategy.transfer)}</div>`:"";
-  openModal({kicker:"六周结算",title:"每个人都带着自己的方法进入考场",wide:true,body:`${strategy}<div class="ending-grid">${endings}</div>`,actions:[{label:"查看36次行动记录",secondary:true,onClick:showJournal},{label:game.strategy?"修改成长策略单":"填写成长策略单",onClick:showStrategyForm}]});
+  const energySummary=`<section class="energy-summary"><div><span>本环节六组合计</span><strong>${totalEnergy}枚能量币</strong></div><p>每组完成旅程固定获得2枚，再按自我管理和关系成长各获得0–2枚。请将本环节奖励计入大活动总能量币。</p></section>`;
+  openModal({kicker:"六周结算",title:"每个人都带着自己的方法进入考场",wide:true,body:`${energySummary}${strategy}<div class="ending-grid">${endings}</div>`,actions:[{label:"查看36次行动记录",secondary:true,onClick:showJournal},{label:game.strategy?"修改成长策略单":"填写成长策略单",onClick:showStrategyForm}]});
 }
 function showStrategyForm(){const s=game.strategy||{};openModal({kicker:"结课记录",title:"成长策略单",wide:true,body:`<label class="field-label">我们最重要的一次选择是什么？<textarea class="strategy-field" id="sChoice">${escapeHtml(s.choice||"")}</textarea></label><label class="field-label">当时牺牲了什么资源？<textarea class="strategy-field" id="sCost">${escapeHtml(s.cost||"")}</textarea></label><label class="field-label">遇到的困难是什么？<textarea class="strategy-field" id="sChallenge">${escapeHtml(s.challenge||"")}</textarea></label><label class="field-label">我们后来怎样调整？<textarea class="strategy-field" id="sAdjustment">${escapeHtml(s.adjustment||"")}</textarea></label><label class="field-label">这个策略怎样用于真实学习或生活？<textarea class="strategy-field" id="sTransfer">${escapeHtml(s.transfer||"")}</textarea></label><p class="form-error" id="strategyError"></p>`,actions:[{label:"返回结局",secondary:true,onClick:showFinal},{label:"完成策略单",onClick:()=>{const strategy={choice:byId("sChoice").value.trim(),cost:byId("sCost").value.trim(),challenge:byId("sChallenge").value.trim(),adjustment:byId("sAdjustment").value.trim(),transfer:byId("sTransfer").value.trim()};if(Object.values(strategy).some(v=>!v)){byId("strategyError").textContent="请完成五项记录，尽量引用游戏中的具体事件。";return;}pushUndo("完成成长策略单");game.strategy=strategy;saveGame();showFinal();}}]});}
 function showJournal(){const rows=game.drawnCardIds.map(id=>{const card=cardById(id),record=game.teams.flatMap(team=>team.history).find(item=>item.cardId===id);return {round:card.round,name:game.teams[record?.actor??0].name,...record,title:card.title,type:card.type};});openModal({kicker:"六周行动记录",title:`已处理 ${game.drawnCardIds.length} / 36 张牌`,wide:true,body:`<div class="echo-list">${rows.map(r=>`<div class="echo-row"><strong>第${r.round}周</strong><span>${escapeHtml(r.name)} · ${escapeHtml(r.title)}</span><span class="echo-changes">${CARD_TYPES[r.type].name}</span></div>`).join("")}</div>`,actions:[{label:"返回结局",onClick:showFinal}]});}
-function showRules(){openModal({kicker:"课堂规则",title:"六周同班抽卡沙盘",body:`<ul class="rule-list"><li>每周六张牌，机遇、挑战、抉择各2张；个人、搭档、全班为3、2、1张。</li><li>每张事件提供两个可执行方案。小组选择一项，再用一句话说明理由。</li><li>六位学生依次各抽一张，共6周、36次行动。没有骰子、地图和提前结束。</li><li>家庭或师生矛盾来自立场、责任和现实条件不同。两个方案都可能合理，但资源代价与沟通结果不同。</li><li>成人矛盾不会淘汰学生。“待沟通”会留在学生侧栏，“已协商”会写入行动记录和最终结局。</li><li>课堂只讨论虚构人物，不要求任何学生公开自己的成绩、家庭情况或真实冲突。</li><li>能量币每轮最多使用1枚，只能抵消当前卡牌造成的1点损失。</li><li>默契达到2解锁一次搭档支援：受损学生少损失1点，支援者损失同类资源1点；达到3的搭档进入第6周时各获得1枚能量币。</li><li>资源归零不跳过行动，完成“删减任务、求助对象、执行时间”后恢复1点。</li><li>抽卡与处理结果是一个撤回步骤。撤回后同一张牌回到牌堆顶部。</li></ul>`,actions:[{label:"知道了",onClick:()=>closeModal(true)}]});}
+function showRules(){openModal({kicker:"课堂规则",title:"六周同班抽卡沙盘",body:`<ul class="rule-list"><li>每周六张牌，机遇、挑战、抉择各2张；个人、搭档、全班为3、2、1张。</li><li>每张事件提供两个可执行方案。小组选择一项，再用一句话说明理由。</li><li>六位学生依次各抽一张，共6周、36次行动。没有骰子、地图和提前结束。</li><li>家庭或师生矛盾来自立场、责任和现实条件不同。两个方案都可能合理，但资源代价与沟通结果不同。</li><li>成人矛盾不会淘汰学生。“待沟通”会留在学生侧栏，“已协商”会写入行动记录和最终结局。</li><li>课堂只讨论虚构人物，不要求任何学生公开自己的成绩、家庭情况或真实冲突。</li><li>能量币不属于本局角色资源，六周过程中不能获得或消耗，只在最终结算时作为大活动奖励发放。</li><li>每组完成六周固定获得2枚，再按自我管理和关系成长各获得0–2枚，最终共获得2–6枚。</li><li>默契达到2解锁一次搭档支援：受损学生少损失1点，支援者损失同类资源1点。</li><li>资源归零不跳过行动，完成“删减任务、求助对象、执行时间”后恢复1点。</li><li>抽卡与处理结果是一个撤回步骤。撤回后同一张牌回到牌堆顶部。</li></ul>`,actions:[{label:"知道了",onClick:()=>closeModal(true)}]});}
 function showStoryIndex(){openModal({kicker:"六周故事",title:"同一间教室里的六个星期",wide:true,body:`<div class="echo-list">${WEEK_STORIES.map((s,i)=>`<button class="choice-option" data-week="${i+1}"><strong>第${i+1}周 · ${escapeHtml(s.theme)}</strong><span>${escapeHtml(s.title)}：${escapeHtml(s.line)}</span></button>`).join("")}</div>`,actions:[{label:"关闭",onClick:()=>closeModal(true)}]});ui.modalBody.querySelectorAll("[data-week]").forEach(btn=>btn.onclick=()=>{const s=WEEK_STORIES[Number(btn.dataset.week)-1];openModal({kicker:s.stage,title:s.title,wide:true,body:`<div class="story-body">${s.body.map(p=>`<p>${escapeHtml(p)}</p>`).join("")}</div>`,actions:[{label:"返回六周目录",onClick:showStoryIndex}]});});}
 function loadSlots(){try{return JSON.parse(localStorage.getItem(CARD_SAVES_KEY))||{};}catch{return {};}}
 function slotSummary(slot){if(!slot?.state)return "空档位";const s=slot.state;return `${s.phase==="setup"?"准备阶段":s.phase==="final"?"已结算":`第${s.round}周 · 第${Math.min((s.activeTeam||0)+1,6)}位`} · ${s.drawnCardIds?.length||0}/36张`;}
