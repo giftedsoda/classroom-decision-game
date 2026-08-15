@@ -326,7 +326,7 @@ function createDecks(){
   return Object.fromEntries(Array.from({length:6},(_,i)=>{const round=i+1;return [round,shuffle(CARDS.filter(c=>c.round===round).map(c=>c.id))];}));
 }
 function createInitialState(){
-  return {schemaVersion:CARD_SCHEMA_VERSION,phase:"setup",round:1,activeTeam:0,weeklyDecks:createDecks(),drawnCardIds:[],currentCardId:null,bonds:{desk:1,physics:1,classwork:1},pairAssistUsed:{desk:false,physics:false,classwork:false},weeklyEchoes:[],story:{prologueSeen:false,profilesSeen:[],chaptersSeen:[]},teams:Array.from({length:6},(_,i)=>makeTeam(i)),undoStack:[],sound:true,reducedMotion:false,lastEvent:"人物的选择、代价和同伴影响会记录在这里。",strategy:null};
+  return {schemaVersion:CARD_SCHEMA_VERSION,phase:"setup",round:1,activeTeam:0,weeklyDecks:createDecks(),drawnCardIds:[],currentCardId:null,bonds:{desk:1,physics:1,classwork:1},pairAssistUsed:{desk:false,physics:false,classwork:false},weeklyEchoes:[],story:{prologueSeen:false,profilesSeen:[],chaptersSeen:[]},teams:Array.from({length:6},(_,i)=>makeTeam(i)),undoStack:[],lastEvent:"人物的选择、代价和同伴影响会记录在这里。",strategy:null};
 }
 function clone(value){return JSON.parse(JSON.stringify(value));}
 function normalizeCardState(value){
@@ -334,24 +334,23 @@ function normalizeCardState(value){
   value.undoStack||=[]; value.weeklyDecks||=createDecks(); value.drawnCardIds||=[]; value.weeklyEchoes||=[];
   value.story||={prologueSeen:false,profilesSeen:[],chaptersSeen:[]}; value.story.profilesSeen||=[]; value.story.chaptersSeen||=[];
   value.bonds||={desk:1,physics:1,classwork:1}; value.pairAssistUsed||={desk:false,physics:false,classwork:false};
-  value.teams||=Array.from({length:6},(_,i)=>makeTeam(i));delete value.roundSixRewardApplied;
+  value.teams||=Array.from({length:6},(_,i)=>makeTeam(i));delete value.roundSixRewardApplied;delete value.sound;delete value.reducedMotion;
   value.teams.forEach((team,i)=>{team.history||=[];team.pendingAdjustment||=[];team.adjustments||=[];team.resources||={courage:5,knowledge:5,time:10};delete team.resources.energy;delete team.energyUsedRounds;team.adultRelations||={family:{status:"clear",title:"暂无待沟通事项",note:""},teacher:{status:"clear",title:"暂无待沟通事项",note:""}};team.adultRelations.family||={status:"clear",title:"暂无待沟通事项",note:""};team.adultRelations.teacher||={status:"clear",title:"暂无待沟通事项",note:""};team.color||=TEAM_COLORS_V2[i];});
   return value;
 }
 function loadCardState(){try{return normalizeCardState(JSON.parse(localStorage.getItem(CARD_STORAGE_KEY)));}catch{return createInitialState();}}
 let game=loadCardState();
 let modalLocked=false;
-let isAnimating=false;
 
 const byId=id=>document.getElementById(id);
-const ui={phaseLabel:byId("phaseLabel"),roundLabel:byId("roundLabel"),weekTheme:byId("weekTheme"),deckCount:byId("deckCount"),storyRibbon:byId("storyRibbon"),storyStage:byId("storyStage"),storyChapter:byId("storyChapter"),storyLine:byId("storyLine"),eventCard:byId("eventCard"),cardSymbol:byId("cardSymbol"),cardMeta:byId("cardMeta"),cardTitle:byId("cardTitle"),cardPreview:byId("cardPreview"),currentTurn:byId("currentTurn"),drawHint:byId("drawHint"),drawButton:byId("drawButton"),lastEventText:byId("lastEventText"),studentAvatar:byId("studentAvatar"),currentStudentName:byId("currentStudentName"),studentBackground:byId("studentBackground"),studentGoal:byId("studentGoal"),studentPressure:byId("studentPressure"),adultRelations:byId("adultRelations"),profileButton:byId("profileButton"),resourceGrid:byId("resourceGrid"),conditionChip:byId("conditionChip"),actionProgress:byId("actionProgress"),partnerFocus:byId("partnerFocus"),turnNote:byId("turnNote"),studentList:byId("studentList"),progressCopy:byId("progressCopy"),bondList:byId("bondList"),soundButton:byId("soundButton"),motionButton:byId("motionButton"),storyButton:byId("storyButton"),saveButton:byId("saveButton"),undoButton:byId("undoButton"),helpButton:byId("helpButton"),resetButton:byId("resetButton"),modalBackdrop:byId("modalBackdrop"),modal:byId("modal"),modalClose:byId("modalClose"),modalKicker:byId("modalKicker"),modalTitle:byId("modalTitle"),modalBody:byId("modalBody"),modalActions:byId("modalActions")};
+const ui={phaseLabel:byId("phaseLabel"),roundLabel:byId("roundLabel"),weekTheme:byId("weekTheme"),deckCount:byId("deckCount"),storyRibbon:byId("storyRibbon"),storyStage:byId("storyStage"),storyChapter:byId("storyChapter"),storyLine:byId("storyLine"),eventCard:byId("eventCard"),cardSymbol:byId("cardSymbol"),cardMeta:byId("cardMeta"),cardTitle:byId("cardTitle"),cardPreview:byId("cardPreview"),currentTurn:byId("currentTurn"),drawHint:byId("drawHint"),drawButton:byId("drawButton"),lastEventText:byId("lastEventText"),studentAvatar:byId("studentAvatar"),currentStudentName:byId("currentStudentName"),studentBackground:byId("studentBackground"),studentGoal:byId("studentGoal"),studentPressure:byId("studentPressure"),adultRelations:byId("adultRelations"),profileButton:byId("profileButton"),resourceGrid:byId("resourceGrid"),conditionChip:byId("conditionChip"),actionProgress:byId("actionProgress"),partnerFocus:byId("partnerFocus"),turnNote:byId("turnNote"),studentList:byId("studentList"),progressCopy:byId("progressCopy"),bondList:byId("bondList"),storyButton:byId("storyButton"),saveButton:byId("saveButton"),undoButton:byId("undoButton"),helpButton:byId("helpButton"),resetButton:byId("resetButton"),modalBackdrop:byId("modalBackdrop"),modal:byId("modal"),modalClose:byId("modalClose"),modalKicker:byId("modalKicker"),modalTitle:byId("modalTitle"),modalBody:byId("modalBody"),modalActions:byId("modalActions")};
 
 function saveGame(){localStorage.setItem(CARD_STORAGE_KEY,JSON.stringify(game));}
 function captureState(){const snapshot=clone(game);snapshot.undoStack=[];return snapshot;}
 function pushUndo(label){game.undoStack.push({label,state:captureState()});}
 function undo(){
-  if(isAnimating||modalLocked||!game.undoStack.length)return;
-  const stack=game.undoStack;const entry=stack.pop();game=normalizeCardState(entry.state);game.undoStack=stack;closeModal(true);saveGame();render();playTone(330,.06);
+  if(modalLocked||!game.undoStack.length)return;
+  const stack=game.undoStack;const entry=stack.pop();game=normalizeCardState(entry.state);game.undoStack=stack;closeModal(true);saveGame();render();
   if(game.currentCardId)setTimeout(showCurrentCardModal,30);
 }
 function cardById(id){return CARDS.find(card=>card.id===id);}
@@ -359,10 +358,6 @@ function pairForStudent(index){return PAIRS.find(pair=>pair.members.includes(ind
 function partnerIndex(index){const pair=pairForStudent(index);return pair.members.find(i=>i!==index);}
 function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
 function escapeHtml(value=""){return String(value).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));}
-function playTone(freq=440,duration=.08){
-  if(!game.sound)return;
-  try{const Ctx=window.AudioContext||window.webkitAudioContext;const ctx=new Ctx();const osc=ctx.createOscillator();const gain=ctx.createGain();osc.frequency.value=freq;gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+duration);osc.connect(gain).connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+duration);}catch{}
-}
 function effectEntries(effects={}){
   const entries=[];
   for(const [target,values] of Object.entries(effects)){
@@ -379,7 +374,7 @@ function renderStory(){
 }
 function renderCardStage(){
   const current=cardById(game.currentCardId);ui.eventCard.className="event-card back";
-  if(current&&!isAnimating){ui.eventCard.classList.add("revealed",current.type);ui.cardSymbol.textContent=CARD_TYPES[current.type].symbol;ui.cardMeta.textContent=`${SCOPE_NAMES[current.scope]} · ${CARD_TYPES[current.type].name}`;ui.cardTitle.textContent=current.title;ui.cardPreview.textContent=current.task;}
+  if(current){ui.eventCard.classList.add("revealed",current.type);ui.cardSymbol.textContent=CARD_TYPES[current.type].symbol;ui.cardMeta.textContent=`${SCOPE_NAMES[current.scope]} · ${CARD_TYPES[current.type].name}`;ui.cardTitle.textContent=current.title;ui.cardPreview.textContent=current.task;}
   else{ui.cardSymbol.textContent="＊";ui.cardMeta.textContent="个人 · 机遇";ui.cardTitle.textContent="等待抽卡";ui.cardPreview.textContent="翻开这一周落到当前学生面前的事件。";}
   const remaining=(game.weeklyDecks[game.round]||[]).length;ui.deckCount.textContent=remaining;
   if(game.phase==="setup"){
@@ -389,7 +384,7 @@ function renderCardStage(){
   }else if(game.phase==="final"){
     ui.currentTurn.textContent="六周行动全部完成";ui.drawHint.textContent="六位学生同时进入考前结算，从选择、调整和关系中生成各自的成长画像。";ui.drawButton.textContent="查看结局与成长策略单";ui.drawButton.disabled=false;
   }else{
-    const team=game.teams[clamp(game.activeTeam,0,5)];ui.currentTurn.textContent=`第 ${game.round} 周 · ${team.name} 抽卡`;ui.drawHint.textContent=team.pendingAdjustment.length?"上次资源归零，请先完成调整任务，再抽取本周事件。":"牌堆已经洗好。每张牌只出现一次，撤回后仍会抽到同一张。";ui.drawButton.textContent=team.pendingAdjustment.length?"完成调整任务":"抽取本周事件";ui.drawButton.disabled=isAnimating||Boolean(game.currentCardId);
+    const team=game.teams[clamp(game.activeTeam,0,5)];ui.currentTurn.textContent=`第 ${game.round} 周 · ${team.name} 抽卡`;ui.drawHint.textContent=team.pendingAdjustment.length?"上次资源归零，请先完成调整任务，再抽取本周事件。":"牌堆已经洗好。每张牌只出现一次，撤回后仍会抽到同一张。";ui.drawButton.textContent=team.pendingAdjustment.length?"完成调整任务":"抽取本周事件";ui.drawButton.disabled=Boolean(game.currentCardId);
   }
 }
 function relationStatusLabel(relation){return relation.status==="pending"?"待沟通":relation.status==="managed"?"已协商":"暂无矛盾";}
@@ -413,9 +408,8 @@ function renderBonds(){
   ui.bondList.innerHTML=PAIRS.map(pair=>{const a=game.teams[pair.members[0]],b=game.teams[pair.members[1]],value=game.bonds[pair.id];let stateText=value>=3?"共同结局":value>=2?(game.pairAssistUsed[pair.id]?"支援已使用":"支援可用"):value===0?"需要沟通":"建立中";return `<article class="bond-card"><div class="bond-card-head"><div><strong>${escapeHtml(a.name)} × ${escapeHtml(b.name)}</strong><em>${pair.name} · ${escapeHtml(pair.theme)}</em></div><span class="bond-value">${value}/3</span></div><div class="bond-progress"><div class="bond-dots" aria-hidden="true">${[1,2,3].map(n=>`<i class="bond-dot ${value>=n?"filled":""}"></i>`).join("")}</div><span class="bond-state">${stateText}</span></div></article>`;}).join("");
 }
 function render(){
-  document.body.classList.toggle("reduce-motion",game.reducedMotion);ui.soundButton.classList.toggle("active",game.sound);ui.motionButton.classList.toggle("active",game.reducedMotion);ui.motionButton.textContent=game.reducedMotion?"静":"动";
   ui.phaseLabel.textContent=game.phase==="setup"?"人物准备":game.phase==="echo"?"班级回声":game.phase==="final"?"考前结算":"同班事件";ui.roundLabel.textContent=`第 ${game.round} / 6 周`;ui.lastEventText.textContent=game.lastEvent;
-  ui.undoButton.disabled=isAnimating||modalLocked||!game.undoStack.length;ui.undoButton.title=game.undoStack.length?`撤回：${game.undoStack.at(-1).label}`:"暂无可撤回操作";ui.undoButton.setAttribute("aria-label",ui.undoButton.title);
+  ui.undoButton.disabled=modalLocked||!game.undoStack.length;ui.undoButton.title=game.undoStack.length?`撤回：${game.undoStack.at(-1).label}`:"暂无可撤回操作";ui.undoButton.setAttribute("aria-label",ui.undoButton.title);
   renderStory();renderCardStage();renderStudent();renderClass();renderBonds();
 }
 
@@ -432,7 +426,7 @@ function showProfile(index,returnToBriefing=false){
   const p=STUDENT_PROFILES[index];if(!game.story.profilesSeen.includes(p.id)){game.story.profilesSeen.push(p.id);saveGame();}
   openModal({kicker:`人物档案 ${index+1} / 6`,title:p.name,wide:false,body:`<div class="profile-story">${p.story.map(text=>`<p>${escapeHtml(text)}</p>`).join("")}</div><div class="profile-sheet"><dl><div><dt>家庭与日常</dt><dd>${escapeHtml(p.family)}</dd></div><div><dt>性格与兴趣</dt><dd>${escapeHtml(p.personality)}</dd></div><div><dt>可以依靠的优点</dt><dd>${escapeHtml(p.strength)}</dd></div><div><dt>压力下的短板</dt><dd>${escapeHtml(p.weakness)}</dd></div><div><dt>六周目标</dt><dd>${escapeHtml(p.goal)}</dd></div></dl></div>`,actions:[{label:returnToBriefing?"返回人物列表":"关闭",onClick:()=>returnToBriefing?showBriefing():closeModal(true)}],locked:returnToBriefing});
 }
-function startGame(){if(game.story.profilesSeen.length!==6)return;pushUndo("开始六周故事");game.phase="playing";game.story.prologueSeen=true;game.lastEvent="六位学生的档案已读完。第一周牌堆已经洗好。";closeModal(true);saveGame();render();playTone(520,.09);showWeekStory();}
+function startGame(){if(game.story.profilesSeen.length!==6)return;pushUndo("开始六周故事");game.phase="playing";game.story.prologueSeen=true;game.lastEvent="六位学生的档案已读完。第一周牌堆已经洗好。";closeModal(true);saveGame();render();showWeekStory();}
 function showWeekStory(){
   const story=WEEK_STORIES[game.round-1];if(!game.story.chaptersSeen.includes(game.round)){game.story.chaptersSeen.push(game.round);saveGame();}
   openModal({kicker:story.stage,title:story.title,wide:true,body:`<div class="story-body">${story.body.map(p=>`<p>${escapeHtml(p)}</p>`).join("")}</div>`,actions:[{label:"进入本周",onClick:()=>closeModal(true)}]});
@@ -453,12 +447,10 @@ function personalizedOptionDetail(card,index,optionIndex,option){
   return personalizedText(PERSONALIZED_OPTION_DETAILS[card.id]?.[index]?.[optionIndex]||OPTION_DETAILS[card.id]?.[optionIndex]||option.label,index,card.round);
 }
 function drawCard(){
-  if(game.phase!=="playing"||isAnimating||game.currentCardId)return;
+  if(game.phase!=="playing"||game.currentCardId)return;
   const team=game.teams[game.activeTeam];if(team.pendingAdjustment.length){showAdjustment(game.activeTeam);return;}
   const deck=game.weeklyDecks[game.round];if(!deck?.length)return;
-  pushUndo(`${team.name}抽取第${game.round}周事件`);const id=deck.shift();game.currentCardId=id;game.drawnCardIds.push(id);isAnimating=true;saveGame();render();ui.drawButton.disabled=true;ui.eventCard.classList.add("drawing");
-  const reduced=game.reducedMotion||matchMedia("(prefers-reduced-motion: reduce)").matches;setTimeout(()=>{ui.eventCard.classList.add("revealed",cardById(id).type);playTone(600,.07);},reduced?0:220);
-  setTimeout(()=>{isAnimating=false;render();showCurrentCardModal();},reduced?10:850);
+  pushUndo(`${team.name}抽取第${game.round}周事件`);const id=deck.shift();game.currentCardId=id;game.drawnCardIds.push(id);saveGame();render();showCurrentCardModal();
 }
 function mitigationHtml(effects){
   const team=game.teams[game.activeTeam],pair=pairForStudent(game.activeTeam),partner=game.teams[partnerIndex(game.activeTeam)];
@@ -524,7 +516,7 @@ function resolveCard(card,effects,decisionText,mitigation={},relations=[]){
   affected.forEach(i=>game.teams[i].history.push(record));game.lastEvent=summary;game.currentCardId=null;game.activeTeam+=1;
   if(game.activeTeam>=6){game.activeTeam=5;game.phase="echo";game.weeklyEchoes.push(buildWeeklyEcho(game.round));}
   closeModal(true);
-  saveGame();render();playTone(460,.08);if(game.phase==="echo")setTimeout(showWeeklyEcho,80);
+  saveGame();render();if(game.phase==="echo")setTimeout(showWeeklyEcho,80);
 }
 function buildWeeklyEcho(round){
   const records=game.drawnCardIds.filter(id=>cardById(id)?.round===round).map(id=>{const card=cardById(id);const record=game.teams.flatMap(t=>t.history).find(h=>h.round===round&&h.cardId===id);return {cardId:id,actor:record?.actor??0,title:card.title,type:card.type,scope:card.scope,summary:record?.summary||"已完成"};});
@@ -574,7 +566,7 @@ function confirmReset(){openModal({kicker:"重新开始",title:"重新开始六�
 
 ui.drawButton.onclick=()=>{if(game.phase==="setup")showBriefing();else if(game.phase==="echo")showWeeklyEcho();else if(game.phase==="final")showFinal();else if(game.teams[game.activeTeam].pendingAdjustment.length)showAdjustment(game.activeTeam);else drawCard();};
 ui.profileButton.onclick=()=>showProfile(clamp(game.activeTeam,0,5));ui.storyRibbon.onclick=()=>{if(game.phase==="setup")showBriefing();else showWeekStory();};ui.storyButton.onclick=showStoryIndex;ui.helpButton.onclick=showRules;ui.saveButton.onclick=()=>showSaves();ui.undoButton.onclick=undo;ui.resetButton.onclick=confirmReset;
-ui.soundButton.onclick=()=>{game.sound=!game.sound;saveGame();render();if(game.sound)playTone(540,.06);};ui.motionButton.onclick=()=>{game.reducedMotion=!game.reducedMotion;saveGame();render();};ui.modalClose.onclick=()=>closeModal();ui.modalBackdrop.onclick=e=>{if(e.target===ui.modalBackdrop)closeModal();};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+ui.modalClose.onclick=()=>closeModal();ui.modalBackdrop.onclick=e=>{if(e.target===ui.modalBackdrop)closeModal();};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
 
 render();
 if(game.phase==="setup")setTimeout(showBriefing,80);else if(game.currentCardId)setTimeout(showCurrentCardModal,80);
